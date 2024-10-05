@@ -14,9 +14,7 @@ const Scene: FC = () => {
   return (
     <CameraProvider>
       <Sun />
-
       <Planets />
-
       <Stars />
     </CameraProvider>
   );

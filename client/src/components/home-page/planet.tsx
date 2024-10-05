@@ -8,6 +8,7 @@ interface PlanetProps extends MeshProps {
   texture: string; // New prop for texture URL or path
   rotationSpeed: number; // New prop for rotation speed
   angle: number;
+  radius: number; // New prop for the X radius
 }
 
 const Planet: React.FC<PlanetProps> = ({
@@ -15,15 +16,23 @@ const Planet: React.FC<PlanetProps> = ({
   texture,
   rotationSpeed,
   angle,
+  radius,
   ...props
 }) => {
   const planetTexture = useLoader(TextureLoader, texture);
   const meshRef = useRef<Mesh>(null); // Create a ref for the mesh
 
   // Rotate the planet on every frame
-  useFrame(() => {
+  useFrame(({ clock }) => {
     if (meshRef.current) {
       meshRef.current.rotation.y += rotationSpeed * 0.0005; // Adjust the rotation speed here
+
+      // revolution
+      const t = clock.getElapsedTime();
+      const x = radius * Math.sin(t);
+      const z = radius * Math.cos(t);
+      meshRef.current.position.x = x;
+      meshRef.current.position.z = z;
     }
   });
   // Convert angle from degrees to radians
