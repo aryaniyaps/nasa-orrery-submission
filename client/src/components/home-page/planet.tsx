@@ -7,6 +7,7 @@ interface PlanetProps extends MeshProps {
   scale: number;
   texture: string; // New prop for texture URL or path
   rotationSpeed: number; // New prop for rotation speed
+  revolutionSpeed: number; // New prop for revolution speed
   angle: number;
   radius: number; // New prop for the X radius
 }
@@ -15,6 +16,7 @@ const Planet: React.FC<PlanetProps> = ({
   scale,
   texture,
   rotationSpeed,
+  revolutionSpeed,
   angle,
   radius,
   ...props
@@ -29,8 +31,8 @@ const Planet: React.FC<PlanetProps> = ({
 
       // revolution
       const t = clock.getElapsedTime();
-      const x = radius * Math.sin(t);
-      const z = radius * Math.cos(t);
+      const x = radius * Math.sin(t * revolutionSpeed);
+      const z = radius * Math.cos(t * revolutionSpeed);
       meshRef.current.position.x = x;
       meshRef.current.position.z = z;
     }

@@ -16,6 +16,7 @@ interface PlanetData {
   texture: string;
   angle: number; // Add angle to track the current angle in the orbit
   rotationSpeed: number;
+  revolutionSpeed: number;
   orbitalSpeed: number; // Add orbital speed
   radius: number; // Add xRadius
 }
@@ -37,6 +38,7 @@ const Planets: React.FC = () => {
         texture: planet.texture,
         angle: planet.angle, // Initialize the angle
         rotationSpeed: planet.rotationSpeed,
+        revolutionSpeed: planet.revolutionSpeed,
         orbitalSpeed: 0.01, // Set a default orbital speed
         radius: radius, // Initialize xRadius
       };
@@ -55,6 +57,7 @@ const Planets: React.FC = () => {
             rotationSpeed={data.rotationSpeed}
             angle={data.angle} // Pass the angle for axial tilt
             radius={data.radius} // Example calculation, adjust as needed
+            revolutionSpeed={data.revolutionSpeed}
           />
         ))}
       </InstancedRigidBodies>

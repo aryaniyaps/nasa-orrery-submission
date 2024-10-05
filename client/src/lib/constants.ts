@@ -22,6 +22,7 @@ export const PLANETS = [
     eccentricity: 0.2056, // Mercury's eccentricity
     texture: "/textures/2k_mercury.jpg",
     rotationSpeed: 10.83,
+    revolutionSpeed: 4.15,
     angle: 0.034, // Axial tilt
     linearVelocity: calculateLinearVelocity({
       radius: 10,
@@ -36,6 +37,7 @@ export const PLANETS = [
     eccentricity: 0.0068,
     texture: "/textures/2k_venus_atmosphere.jpg",
     rotationSpeed: 6.52,
+    revolutionSpeed: 1.63,
     angle: 177.4, // Axial tilt
     linearVelocity: calculateLinearVelocity({
       radius: 15,
@@ -50,6 +52,7 @@ export const PLANETS = [
     eccentricity: 0.0167,
     texture: "/textures/2k_earth_daymap.jpg",
     rotationSpeed: 15,
+    revolutionSpeed: 1,
     angle: 23.5, // Axial tilt
     linearVelocity: calculateLinearVelocity({ radius: 20, orbitalPeriod: 1 }), // Calculate linear velocity
   },
@@ -61,6 +64,7 @@ export const PLANETS = [
     eccentricity: 0.0934,
     texture: "/textures/2k_mars.jpg",
     rotationSpeed: 15.8,
+    revolutionSpeed: 0.53,
     angle: 25.2, // Axial tilt
     linearVelocity: calculateLinearVelocity({
       radius: 25,
@@ -75,6 +79,7 @@ export const PLANETS = [
     eccentricity: 0.0489,
     texture: "/textures/2k_jupiter.jpg",
     rotationSpeed: 360,
+    revolutionSpeed: 0.084,
     angle: 3.1, // Axial tilt
     linearVelocity: calculateLinearVelocity({
       radius: 35,
@@ -89,6 +94,7 @@ export const PLANETS = [
     eccentricity: 0.0565,
     texture: "/textures/2k_saturn.jpg",
     rotationSpeed: 360,
+    revolutionSpeed: 0.034,
     angle: 26.7, // Axial tilt
     linearVelocity: calculateLinearVelocity({
       radius: 45,
@@ -103,6 +109,7 @@ export const PLANETS = [
     eccentricity: 0.0472,
     texture: "/textures/2k_uranus.jpg",
     rotationSpeed: 360,
+    revolutionSpeed: 0.012,
     angle: 97.8, // Axial tilt
     linearVelocity: calculateLinearVelocity({ radius: 55, orbitalPeriod: 84 }), // Calculate linear velocity
   },
@@ -114,6 +121,7 @@ export const PLANETS = [
     eccentricity: 0.0086,
     texture: "/textures/2k_neptune.jpg",
     rotationSpeed: 360,
+    revolutionSpeed: 0.006,
     angle: 28.3, // Axial tilt
     linearVelocity: calculateLinearVelocity({
       radius: 65,
