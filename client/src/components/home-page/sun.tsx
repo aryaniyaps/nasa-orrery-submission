@@ -71,9 +71,13 @@ const Sun: React.FC = () => {
       type="kinematicPosition"
       onClick={handleFocus}
     >
-      <mesh>
+      <mesh position={[0, 0, 0]}>
         <sphereGeometry args={[SUN_RADIUS, 32, 32]} />
-        <customShaderMaterial ref={shaderRef} emissiveIntensity={5} time={0} />
+        <customShaderMaterial
+          ref={shaderRef}
+          emissiveIntensity={3.5}
+          time={0}
+        />
       </mesh>
 
       <pointLight
