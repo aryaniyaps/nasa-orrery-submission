@@ -1,143 +1,116 @@
 import { useFrame } from "@react-three/fiber";
-import {
-  InstancedRigidBodies,
-  RigidBodyApi,
-  RigidBodyProps,
-} from "@react-three/rapier";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import { InstancedRigidBodies, RapierRigidBody } from "@react-three/rapier";
+import React, { useEffect, useMemo, useRef } from "react";
 import { Vector3 } from "three";
 
-import { useExplosion } from "@/context/explosions";
-import { useTrails } from "@/context/trails";
-import {
-  calculateInitialPosition,
-  calculateInitialVelocity,
-} from "@/utils/planetCalculations";
-
+import { PLANETS } from "@/lib/constants";
+import Orbit from "./orbit"; // Import the new Orbit component
 import Planet from "./planet";
 
 // Define the types for planet data
 interface PlanetData {
   key: string;
   position: Vector3;
-  linearVelocity: Vector3;
   scale: number;
   userData: { type: string; key: string };
+  eccentricity: number;
+  texture: string;
+  angle: number; // Add angle to track the current angle in the orbit
+  rotationSpeed: number;
 }
 
 // Define the props for Planets component
-interface PlanetsProps {
-  count?: number;
-}
+const Planets: React.FC = () => {
+  const planetsRef = useRef<RapierRigidBody[]>([]);
 
-// Planets component
-const Planets: React.FC<PlanetsProps> = ({ count = 14 }) => {
-  const { triggerExplosion } = useExplosion();
-  const { addTrailPoint, clearTrail } = useTrails();
-
-  // Define the ref for instanced rigid bodies
-  const planetsRef = useRef<RigidBodyApi[]>([]);
-
-  const [planetCount, setPlanetCount] = useState<number>(count);
-
-  // Create a new planet with randomized values
-  const newPlanet = (respawn = false): PlanetData => {
-    const key = "instance_" + Math.random();
-    const position = calculateInitialPosition(respawn);
-    const linearVelocity = calculateInitialVelocity(position, respawn);
-    const scale = 0.5 + Math.random() * 1.5;
-
-    return {
-      key,
-      position,
-      linearVelocity,
-      scale,
-      userData: { type: "Planet", key },
-    };
-  };
-
-  // Memoize the initial planet data to avoid re-computing on every render
   const planetData: PlanetData[] = useMemo(() => {
-    const planets: PlanetData[] = [];
-    for (let i = 0; i < count; i++) {
-      planets.push(newPlanet());
-    }
-    return planets;
-  }, [count]);
+    return PLANETS.map((planet) => {
+      const position = new Vector3(...planet.position);
 
-  // Update planet count and add initial spin to planets
+      return {
+        key: planet.key,
+        position: position,
+        scale: planet.scale,
+        eccentricity: planet.eccentricity,
+        userData: { type: "Planet", key: planet.key },
+        texture: planet.texture,
+        angle: planet.angle, // Initialize the angle
+        rotationSpeed: planet.rotationSpeed,
+      };
+    });
+  }, []);
+
   useEffect(() => {
     if (planetsRef.current) {
-      setPlanetCount(planetsRef.current.length);
       planetsRef.current.forEach((planet) => {
-        planet?.setAngvel(new Vector3(0, Math.random() - 0.5, 0));
+        planet?.setAngvel(new Vector3(0, Math.random() - 0.5, 0), true);
       });
     }
   }, [planetsRef.current]);
 
-  // Add a trail point for each planet on each frame
+  // Constant angular speed for all planets (adjust as needed)
+  const constantAngularSpeed = 0.01; // Radians per frame
+
+  // Update planets' positions every frame
   useFrame(() => {
-    planetsRef.current?.forEach((planet) => {
-      const position = planet.translation();
-      addTrailPoint(
-        planet.userData.key,
-        new Vector3(position.x, position.y, position.z)
-      );
-    });
+    if (planetsRef.current) {
+      planetsRef.current.forEach((planet, index) => {
+        const data = planetData[index];
+        const planetPos = planet.translation(); // Get the current physics position
+
+        console.log(`Planet: ${data.key}, Physics Position:`, planetPos);
+
+        // Update the angle using the constant angular speed
+        data.angle += constantAngularSpeed; // Increment angle by constant speed
+
+        // Calculate new position
+        const newPosition = new Vector3(
+          data.position.length() * Math.cos(data.angle),
+          data.position.y,
+          data.position.length() * Math.sin(data.angle)
+        );
+
+        // Update the planet's position using RigidBodyApi
+        planet.setTranslation(newPosition, true);
+      });
+    }
   });
 
-  // Handle collision logic
-  const handleCollision = ({ manifold, target, other }: any) => {
-    console.log("Planet collision");
-
-    const targetMass = target.rigidBody.mass();
-    const otherMass = other.rigidBody.mass();
-
-    if (otherMass > targetMass) {
-      const targetPosition = target.rigidBody.translation();
-      const collisionWorldPosition = manifold.solverContactPoint(0);
-
-      const targetVelocity = target.rigidBody.linvel();
-      const otherVelocity = other.rigidBody.linvel();
-
-      const combinedMass = targetMass + otherMass;
-      const combinedVelocity = new Vector3()
-        .addScaledVector(targetVelocity, targetMass)
-        .addScaledVector(otherVelocity, otherMass)
-        .divideScalar(combinedMass);
-
-      if (other.rigidBody.userData.type === "Planet") {
-        other.rigidBody.setLinvel(combinedVelocity);
-      }
-
-      clearTrail(target.rigidBody.userData.key);
-
-      triggerExplosion(
-        new Vector3(
-          collisionWorldPosition.x,
-          collisionWorldPosition.y,
-          collisionWorldPosition.z
-        ),
-        new Vector3(targetPosition.x, targetPosition.y, targetPosition.z)
-      );
-
-      const newPlanetData = newPlanet(true);
-
-      target.rigidBody.userData.key = newPlanetData.key;
-      target.rigidBody.setTranslation(newPlanetData.position);
-      target.rigidBody.setLinvel(newPlanetData.linearVelocity);
-    }
-  };
-
   return (
-    <InstancedRigidBodies
-      ref={planetsRef}
-      instances={planetData as RigidBodyProps[]}
-      colliders="ball"
-      onCollisionEnter={handleCollision}
-    >
-      <Planet count={planetCount} />
-    </InstancedRigidBodies>
+    <>
+      <InstancedRigidBodies
+        ref={planetsRef}
+        instances={planetData.map((data) => ({
+          position: data.position,
+          scale: data.scale,
+          userData: data.userData,
+          key: data.key,
+        }))}
+        colliders="ball"
+      >
+        {planetData.map((data) => (
+          <Planet
+            key={data.key}
+            position={data.position}
+            scale={data.scale}
+            texture={data.texture} // Pass the texture
+            rotationSpeed={data.rotationSpeed}
+            angle={data.angle}
+          />
+        ))}
+      </InstancedRigidBodies>
+
+      {/* Render orbits for each planet */}
+      {planetData.map((data) => (
+        <Orbit
+          key={`${data.key}-orbit`}
+          radius={data.position.length()} // Ensure radius matches the distance from the Sun
+          segments={100} // Number of segments for the circle
+          position={[0, 0, 0]} // Set the position to be at the Sun's position
+          eccentricity={data.eccentricity} // Set the eccentricity for the orbit
+        />
+      ))}
+    </>
   );
 };
 

@@ -9,14 +9,19 @@ export default function HomePage() {
       <color attach="background" args={["black"]} />
       <ambientLight intensity={0.25} />
 
-      <OrbitControls maxDistance={450} minDistance={50} makeDefault />
+      <OrbitControls maxDistance={500} minDistance={5} makeDefault enableZoom />
 
       <Physics gravity={[0, 0, 0]}>
         <Scene />
       </Physics>
 
       <EffectComposer>
-        <Bloom luminanceThreshold={0} luminanceSmoothing={0.9} height={300} />
+        <Bloom
+          luminanceThreshold={500}
+          luminanceSmoothing={500}
+          height={300}
+          width={300}
+        />
       </EffectComposer>
     </Canvas>
   );

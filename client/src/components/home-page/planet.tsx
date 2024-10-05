@@ -1,53 +1,42 @@
-import { useCamera } from "@/context/camera";
-import { useLoader } from "@react-three/fiber";
-import React, { useMemo, useRef } from "react";
-import { Color, InstancedMesh, TextureLoader } from "three";
+import { MeshProps, useFrame, useLoader } from "@react-three/fiber";
+import React, { useRef } from "react";
+import { Mesh, TextureLoader } from "three";
 
-// Define the props type
-interface PlanetProps {
-  count: number;
+// Define the props type for the Planet component
+interface PlanetProps extends MeshProps {
+  scale: number;
+  texture: string; // New prop for texture URL or path
+  rotationSpeed: number; // New prop for rotation speed
+  angle: number;
 }
 
-const Planet: React.FC<PlanetProps> = ({ count }) => {
-  // Reference for instanced mesh
-  const mesh = useRef<InstancedMesh>(null);
+const Planet: React.FC<PlanetProps> = ({
+  scale,
+  texture,
+  rotationSpeed,
+  angle,
+  ...props
+}) => {
+  const planetTexture = useLoader(TextureLoader, texture);
+  const meshRef = useRef<Mesh>(null); // Create a ref for the mesh
 
-  // Access camera focus handling from context
-  const { handleFocus } = useCamera();
-
-  // Load texture for planet
-  const texture = useLoader(TextureLoader, "/textures/planet.jpg");
-
-  // Create random colors for each planet instance
-  const instanceColors = useMemo(() => {
-    const colors = new Float32Array(count * 3);
-    for (let i = 0; i < count; i++) {
-      const hue = 250 + Math.random() * 50;
-      const saturation = 40 + Math.random() * 60;
-      const lightness = 60;
-
-      const hslColor = new Color(`hsl(${hue}, ${saturation}%, ${lightness}%)`);
-      hslColor.toArray(colors, i * 3);
+  // Rotate the planet on every frame
+  useFrame(() => {
+    if (meshRef.current) {
+      meshRef.current.rotation.y += rotationSpeed * 0.0005; // Adjust the rotation speed here
     }
-    return colors;
-  }, [count]);
-
+  });
+  // Convert angle from degrees to radians
+  const radians = (angle * Math.PI) / 180;
   return (
-    <instancedMesh
-      ref={mesh}
-      args={[undefined, undefined, count]}
-      onClick={handleFocus}
-      castShadow
-      receiveShadow
-    >
-      <sphereGeometry args={[2, 32, 32]}>
-        <instancedBufferAttribute
-          attach="attributes-color"
-          args={[instanceColors, 3]}
-        />
-      </sphereGeometry>
-      <meshStandardMaterial vertexColors map={texture} />
-    </instancedMesh>
+    <mesh ref={meshRef} {...props} scale={scale} rotation={[radians, 0, 0]}>
+      <sphereGeometry args={[2, 64, 64]} />
+      <meshStandardMaterial
+        map={planetTexture}
+        roughness={100} // Increase roughness for less reflection
+        metalness={0.1} // Lower metalness for less shiny effect
+      />
+    </mesh>
   );
 };
 

@@ -1,6 +1,4 @@
 import { CameraProvider } from "@/context/camera";
-import { ExplosionProvider } from "@/context/explosions";
-import { TrailProvider } from "@/context/trails";
 import useGravity from "@/lib/hooks/use-gravity";
 
 import { FC } from "react";
@@ -15,15 +13,11 @@ const Scene: FC = () => {
 
   return (
     <CameraProvider>
-      <ExplosionProvider>
-        <Sun />
+      <Sun />
 
-        <TrailProvider>
-          <Planets />
-        </TrailProvider>
+      <Planets />
 
-        <Stars />
-      </ExplosionProvider>
+      <Stars />
     </CameraProvider>
   );
 };
