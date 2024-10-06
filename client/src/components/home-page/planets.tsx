@@ -1,4 +1,4 @@
-import { PLANETS } from "@/lib/constants";
+import { PLANETS, POSITION_SCALING_FACTOR } from "@/lib/constants";
 import { InstancedRigidBodies } from "@react-three/rapier";
 import React, { useEffect, useMemo, useState } from "react";
 import { Vector3 } from "three";
@@ -20,7 +20,10 @@ interface PlanetData {
   radius: number;
 }
 
-const Planets: React.FC = () => {
+interface PlanetsProps {
+  positions: any;
+}
+const Planets: React.FC<PlanetsProps> = ({ positions }) => {
   const [focusedPlanet, setFocusedPlanet] = useState<PlanetData | null>(null); // Track the focused planet
   const [isCameraLockActive, setIsCameraLockActive] = useState(true); // Track if camera locking is active
 
@@ -40,7 +43,15 @@ const Planets: React.FC = () => {
 
   const planetData: PlanetData[] = useMemo(() => {
     return PLANETS.map((planet) => {
-      const position = new Vector3(...planet.position);
+      // const currentPosition = planet.position; // Get the current position from the positions prop
+      const currentPosition = positions[planet.key]; // Get the current position from the positions prop
+      const position = new Vector3(
+        ...[
+          currentPosition[0] * POSITION_SCALING_FACTOR,
+          currentPosition[1] * POSITION_SCALING_FACTOR,
+          currentPosition[2] * POSITION_SCALING_FACTOR,
+        ]
+      ); // Create a Vector3 with the position
       const radius = position.length(); // Calculate the radius from the Sun
 
       return {
@@ -88,7 +99,7 @@ const Planets: React.FC = () => {
       {planetData.map((data) => (
         <Orbit
           key={`${data.key}-orbit`}
-          radius={data.position.length()}
+          radius={data.radius}
           segments={100}
           position={[0, 0, 0]}
           eccentricity={data.eccentricity}

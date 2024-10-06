@@ -6,15 +6,18 @@ import Planets from "./planets";
 import Stars from "./stars";
 import Sun from "./sun";
 
+interface SceneProps {
+  positions: any;
+}
 // Scene component
-const Scene: FC = () => {
+const Scene: FC<SceneProps> = (props) => {
   // Custom hook for gravity logic
   useGravity();
 
   return (
     <CameraProvider>
       <Sun />
-      <Planets />
+      <Planets positions={props.positions} />
       <Stars />
     </CameraProvider>
   );

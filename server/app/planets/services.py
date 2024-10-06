@@ -35,7 +35,7 @@ def fetch_planet_positions(target_date: datetime):
         planet = planets[planet_key]
         astrometric = planet.at(t).observe(sun)
         x, y, z = astrometric.position.au
-        positions[planet_name] = {"X": x, "Y": y, "Z": z}
+        positions[planet_name] = [x, y, z]
     # Add the Sun's coordinates (which are 0, 0, 0 in heliocentric coordinates)
-    positions["sun"] = {"X": 0.0, "Y": 0.0, "Z": 0.0}
+    positions["sun"] = [0.0, 0.0, 0.0]
     return positions

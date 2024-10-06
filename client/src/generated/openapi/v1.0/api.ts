@@ -99,7 +99,7 @@ export const PlanetsApiAxiosParamCreator = function (configuration?: Configurati
 
             if (targetDate !== undefined) {
                 localVarQueryParameter['target_date'] = (targetDate as any instanceof Date) ?
-                    (targetDate as any).toISOString() :
+                    (targetDate as any).toISOString().substring(0,10) :
                     targetDate;
             }
 

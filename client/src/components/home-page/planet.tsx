@@ -66,7 +66,7 @@ const Planet: React.FC<PlanetProps> = ({
         onClick={onPlanetClick} // Detect click and lock onto planet
         castShadow
       >
-        <sphereGeometry args={[2, 64, 64]} />
+        <sphereGeometry args={[1, 32, 32]} />
         <meshStandardMaterial
           map={planetTexture}
           roughness={100}

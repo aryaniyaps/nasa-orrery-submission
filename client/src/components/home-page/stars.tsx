@@ -14,7 +14,7 @@ const Stars: React.FC<StarsProps> = ({ count = 5000 }) => {
   // Pre-generate positions for the stars
   const positions = useMemo(() => {
     const positions: number[] = [];
-    const minDistance = 500;
+    const minDistance = 1200;
 
     for (let i = 0; i < count; i++) {
       const distance = minDistance + Math.random() * 4500;
