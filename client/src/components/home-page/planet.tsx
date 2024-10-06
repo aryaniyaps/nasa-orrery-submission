@@ -1,15 +1,18 @@
-import { MeshProps, useFrame, useLoader } from "@react-three/fiber";
+import { MeshProps, useFrame, useLoader, useThree } from "@react-three/fiber";
 import React, { useRef } from "react";
-import { Mesh, TextureLoader } from "three";
+import { Mesh, TextureLoader, Vector3 } from "three";
 
 // Define the props type for the Planet component
 interface PlanetProps extends MeshProps {
   scale: number;
-  texture: string; // New prop for texture URL or path
-  rotationSpeed: number; // New prop for rotation speed
-  revolutionSpeed: number; // New prop for revolution speed
+  texture: string;
+  rotationSpeed: number;
+  revolutionSpeed: number;
   angle: number;
-  radius: number; // New prop for the X radius
+  radius: number;
+  onPlanetClick: () => void; // Callback for when the planet is clicked
+  isFocused: boolean; // Whether the camera is locked onto this planet
+  planetName: string; // The name of the planet to display when focused
 }
 
 const Planet: React.FC<PlanetProps> = ({
@@ -19,35 +22,57 @@ const Planet: React.FC<PlanetProps> = ({
   revolutionSpeed,
   angle,
   radius,
+  onPlanetClick,
+  isFocused,
+  planetName, // Planet name prop
   ...props
 }) => {
   const planetTexture = useLoader(TextureLoader, texture);
-  const meshRef = useRef<Mesh>(null); // Create a ref for the mesh
+  const meshRef = useRef<Mesh>(null);
+  const { camera } = useThree();
 
   // Rotate the planet on every frame
   useFrame(({ clock }) => {
     if (meshRef.current) {
-      meshRef.current.rotation.y += rotationSpeed * 0.0005; // Adjust the rotation speed here
+      // Planet rotation
+      meshRef.current.rotation.y += rotationSpeed * 0.0005;
 
-      // revolution
+      // Planet revolution
       const t = clock.getElapsedTime();
       const x = radius * Math.sin(t * revolutionSpeed);
       const z = radius * Math.cos(t * revolutionSpeed);
-      meshRef.current.position.x = x;
-      meshRef.current.position.z = z;
+      meshRef.current.position.set(x, 0, z);
+
+      // If the planet is focused and camera locking is active, update the camera position
+      if (isFocused) {
+        const offset = new Vector3(10, 5, 10); // Offset the camera to give a better view
+        camera.position.copy(meshRef.current.position.clone().add(offset));
+        camera.lookAt(meshRef.current.position);
+      }
     }
   });
+
   // Convert angle from degrees to radians
   const radians = (angle * Math.PI) / 180;
+
   return (
-    <mesh ref={meshRef} {...props} scale={scale} rotation={[radians, 0, 0]}>
-      <sphereGeometry args={[2, 64, 64]} />
-      <meshStandardMaterial
-        map={planetTexture}
-        roughness={100} // Increase roughness for less reflection
-        metalness={0.1} // Lower metalness for less shiny effect
-      />
-    </mesh>
+    <>
+      <mesh
+        ref={meshRef}
+        {...props}
+        scale={scale}
+        rotation={[radians, 0, 0]}
+        onClick={onPlanetClick} // Detect click and lock onto planet
+        castShadow
+      >
+        <sphereGeometry args={[2, 64, 64]} />
+        <meshStandardMaterial
+          map={planetTexture}
+          roughness={100}
+          metalness={0.1}
+        />
+      </mesh>
+    </>
   );
 };
 
