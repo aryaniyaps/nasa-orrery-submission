@@ -11,7 +11,7 @@ export const SUN_RADIUS = 5;
 export const SUN_MASS =
   Math.round((4 / 3) * Math.PI * Math.pow(SUN_RADIUS, 3) * 1410) / 100;
 
-export const TIME_SCALE = 25;
+export const TIME_SCALE = 365;
 
 // Function to scale rotation and revolution speeds based on Earth
 const scaleRotationSpeed = (planetRotationPeriod: number) => {
