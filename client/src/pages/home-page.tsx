@@ -1,3 +1,4 @@
+import { useQuery } from 'react-query';
 import ControlPanel from "@/components/home-page/controls/control-panel";
 import Scene from "@/components/home-page/scene";
 import useGetPlanetPositions from "@/lib/queries/useGetPlanetPositions";
@@ -12,39 +13,41 @@ import {
   useSearchParams,
 } from "react-router-dom";
 
+// Add a new hook for fetching NEO positions
+function useGetNEOPositions(targetDate: string) {
+  return useQuery(['neoPositions', targetDate], async () => {
+    const response = await fetch(`https://api.nasa.gov/neo/rest/v1/feed?start_date=${targetDate}&end_date=${targetDate}&api_key=YOUR_API_KEY`);
+    const data = await response.json();
+    return data;
+  });
+}
+
 export default function HomePage() {
   const [params, _setParams] = useSearchParams();
   const navigate = useNavigate();
   const queryTargetDate = params.get("targetDate");
 
-  // Convert query parameter to Date or default to a specific date
   const targetDate = queryTargetDate
     ? new Date(queryTargetDate)
     : new Date("2024-01-01");
 
-  console.log(targetDate);
-
-  // Call the custom hook with the target date
-  const {
-    data: positions,
-    isLoading,
-    isError,
-  } = useGetPlanetPositions({
+  // Fetch planet positions
+  const { data: positions, isLoading: isLoadingPlanets, isError: isErrorPlanets } = useGetPlanetPositions({
     targetDate: targetDate.toISOString(),
   });
 
-  // Error handling
-  if (isError) {
+  // Fetch NEO positions
+  const { data: neoPositions, isLoading: isLoadingNEOs, isError: isErrorNEOs } = useGetNEOPositions(targetDate.toISOString().split("T")[0]);
+
+  if (isErrorPlanets || isErrorNEOs) {
     return <div>Error fetching positions.</div>;
   }
 
-  // Loading state handling
-  if (isLoading) {
+  if (isLoadingPlanets || isLoadingNEOs) {
     return <div>Loading...</div>;
   }
 
   const handleDateChange = (newDate: Date) => {
-    // Update the query parameter in the URL
     startTransition(() => {
       navigate({
         pathname: "/",
@@ -58,27 +61,12 @@ export default function HomePage() {
       <Canvas camera={{ position: [0, 50, 150], far: 200000 }}>
         <color attach="background" args={["black"]} />
         <ambientLight intensity={1.5} />
-
-        <OrbitControls
-          maxDistance={750}
-          minDistance={5}
-          makeDefault
-          enableZoom
-          enablePan
-        />
-
+        <OrbitControls maxDistance={750} minDistance={5} makeDefault enableZoom enablePan />
         <Physics gravity={[0, 0, 0]}>
-          <Scene positions={positions} />{" "}
-          {/* Pass positions to Scene if needed */}
+          <Scene positions={positions} neoPositions={neoPositions} />
         </Physics>
-
         <EffectComposer>
-          <Bloom
-            luminanceThreshold={500}
-            luminanceSmoothing={500}
-            height={300}
-            width={300}
-          />
+          <Bloom luminanceThreshold={500} luminanceSmoothing={500} height={300} width={300} />
         </EffectComposer>
       </Canvas>
       <ControlPanel setTargetDate={handleDateChange} targetDate={targetDate} />
