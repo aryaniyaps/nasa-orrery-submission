@@ -1,3 +1,4 @@
+import { TIME_SCALE } from "@/lib/constants";
 import { MeshProps, useFrame, useLoader, useThree } from "@react-three/fiber";
 import React, { useRef } from "react";
 import { Mesh, TextureLoader, Vector3 } from "three";
@@ -35,10 +36,10 @@ const Planet: React.FC<PlanetProps> = ({
   useFrame(({ clock }) => {
     if (meshRef.current) {
       // Planet rotation
-      meshRef.current.rotation.y += rotationSpeed * 0.0005;
+      meshRef.current.rotation.y += rotationSpeed / TIME_SCALE;
 
       // Planet revolution
-      const t = clock.getElapsedTime();
+      const t = clock.getElapsedTime() / TIME_SCALE;
       const x = radius * Math.sin(t * revolutionSpeed);
       const z = radius * Math.cos(t * revolutionSpeed);
       meshRef.current.position.set(x, 0, z);
