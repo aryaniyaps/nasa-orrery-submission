@@ -26,15 +26,15 @@ const Planets: React.FC = () => {
 
   // Handle scroll detection
   useEffect(() => {
-    const handleScroll = () => {
+    const deactivateCameraLock = () => {
       setIsCameraLockActive(false); // Disable camera lock on scroll
     };
 
-    window.addEventListener("wheel", handleScroll);
+    window.addEventListener("mousemove", deactivateCameraLock);
 
     // Cleanup on component unmount
     return () => {
-      window.removeEventListener("wheel", handleScroll);
+      window.removeEventListener("mousemove", deactivateCameraLock);
     };
   }, []);
 
