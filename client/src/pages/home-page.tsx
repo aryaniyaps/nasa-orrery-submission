@@ -7,9 +7,15 @@ export default function HomePage() {
   return (
     <Canvas camera={{ position: [0, 50, 150], far: 200000 }}>
       <color attach="background" args={["black"]} />
-      <ambientLight intensity={0.25} />
+      <ambientLight intensity={1.5} />
 
-      <OrbitControls maxDistance={500} minDistance={5} makeDefault enableZoom />
+      <OrbitControls
+        maxDistance={500}
+        minDistance={5}
+        makeDefault
+        enableZoom
+        enablePan
+      />
 
       <Physics gravity={[0, 0, 0]}>
         <Scene />

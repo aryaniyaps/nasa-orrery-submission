@@ -1,10 +1,8 @@
-import { useFrame } from "@react-three/fiber";
-import { InstancedRigidBodies, RapierRigidBody } from "@react-three/rapier";
-import React, { useEffect, useMemo, useRef } from "react";
-import { Vector3 } from "three";
-
 import { PLANETS } from "@/lib/constants";
-import Orbit from "./orbit"; // Import the new Orbit component
+import { InstancedRigidBodies } from "@react-three/rapier";
+import React, { useEffect, useMemo, useState } from "react";
+import { Vector3 } from "three";
+import Orbit from "./orbit";
 import Planet from "./planet";
 
 // Define the types for planet data
@@ -15,17 +13,35 @@ interface PlanetData {
   userData: { type: string; key: string };
   eccentricity: number;
   texture: string;
-  angle: number; // Add angle to track the current angle in the orbit
+  angle: number;
   rotationSpeed: number;
+  revolutionSpeed: number;
+  orbitalSpeed: number;
+  radius: number;
 }
 
-// Define the props for Planets component
 const Planets: React.FC = () => {
-  const planetsRef = useRef<RapierRigidBody[]>([]);
+  const [focusedPlanet, setFocusedPlanet] = useState<PlanetData | null>(null); // Track the focused planet
+  const [isCameraLockActive, setIsCameraLockActive] = useState(true); // Track if camera locking is active
+
+  // Handle scroll detection
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsCameraLockActive(false); // Disable camera lock on scroll
+    };
+
+    window.addEventListener("wheel", handleScroll);
+
+    // Cleanup on component unmount
+    return () => {
+      window.removeEventListener("wheel", handleScroll);
+    };
+  }, []);
 
   const planetData: PlanetData[] = useMemo(() => {
     return PLANETS.map((planet) => {
       const position = new Vector3(...planet.position);
+      const radius = position.length(); // Calculate the radius from the Sun
 
       return {
         key: planet.key,
@@ -34,68 +50,36 @@ const Planets: React.FC = () => {
         eccentricity: planet.eccentricity,
         userData: { type: "Planet", key: planet.key },
         texture: planet.texture,
-        angle: planet.angle, // Initialize the angle
+        angle: planet.angle,
         rotationSpeed: planet.rotationSpeed,
+        revolutionSpeed: planet.revolutionSpeed,
+        orbitalSpeed: 0.01, // Set a default orbital speed
+        radius: radius,
       };
     });
   }, []);
 
-  useEffect(() => {
-    if (planetsRef.current) {
-      planetsRef.current.forEach((planet) => {
-        planet?.setAngvel(new Vector3(0, Math.random() - 0.5, 0), true);
-      });
-    }
-  }, [planetsRef.current]);
-
-  // Constant angular speed for all planets (adjust as needed)
-  const constantAngularSpeed = 0.01; // Radians per frame
-
-  // Update planets' positions every frame
-  useFrame(() => {
-    if (planetsRef.current) {
-      planetsRef.current.forEach((planet, index) => {
-        const data = planetData[index];
-        const planetPos = planet.translation(); // Get the current physics position
-
-        console.log(`Planet: ${data.key}, Physics Position:`, planetPos);
-
-        // Update the angle using the constant angular speed
-        data.angle += constantAngularSpeed; // Increment angle by constant speed
-
-        // Calculate new position
-        const newPosition = new Vector3(
-          data.position.length() * Math.cos(data.angle),
-          data.position.y,
-          data.position.length() * Math.sin(data.angle)
-        );
-
-        // Update the planet's position using RigidBodyApi
-        planet.setTranslation(newPosition, true);
-      });
-    }
-  });
+  const handlePlanetClick = (data: PlanetData) => {
+    setFocusedPlanet(data); // Set the clicked planet as focused
+    setIsCameraLockActive(true); // Re-enable camera lock when a planet is clicked
+  };
 
   return (
     <>
-      <InstancedRigidBodies
-        ref={planetsRef}
-        instances={planetData.map((data) => ({
-          position: data.position,
-          scale: data.scale,
-          userData: data.userData,
-          key: data.key,
-        }))}
-        colliders="ball"
-      >
+      <InstancedRigidBodies instances={planetData} colliders="ball">
         {planetData.map((data) => (
           <Planet
             key={data.key}
+            planetName={data.key}
             position={data.position}
             scale={data.scale}
-            texture={data.texture} // Pass the texture
+            texture={data.texture}
             rotationSpeed={data.rotationSpeed}
             angle={data.angle}
+            radius={data.radius}
+            revolutionSpeed={data.revolutionSpeed}
+            onPlanetClick={() => handlePlanetClick(data)} // Handle planet click
+            isFocused={focusedPlanet?.key === data.key && isCameraLockActive} // Check if this is the focused planet and camera locking is active
           />
         ))}
       </InstancedRigidBodies>
@@ -104,10 +88,10 @@ const Planets: React.FC = () => {
       {planetData.map((data) => (
         <Orbit
           key={`${data.key}-orbit`}
-          radius={data.position.length()} // Ensure radius matches the distance from the Sun
-          segments={100} // Number of segments for the circle
-          position={[0, 0, 0]} // Set the position to be at the Sun's position
-          eccentricity={data.eccentricity} // Set the eccentricity for the orbit
+          radius={data.position.length()}
+          segments={100}
+          position={[0, 0, 0]}
+          eccentricity={data.eccentricity}
         />
       ))}
     </>
