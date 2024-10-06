@@ -1,7 +1,6 @@
-import { TIME_SCALE } from "@/lib/constants";
-import { MeshProps, useFrame, useLoader, useThree } from "@react-three/fiber";
+import { MeshProps, useLoader, useThree } from "@react-three/fiber";
 import React, { useRef } from "react";
-import { Mesh, TextureLoader, Vector3 } from "three";
+import { Mesh, TextureLoader } from "three";
 
 // Define the props type for the Planet component
 interface PlanetProps extends MeshProps {
@@ -33,25 +32,25 @@ const Planet: React.FC<PlanetProps> = ({
   const { camera } = useThree();
 
   // Rotate the planet on every frame
-  useFrame(({ clock }) => {
-    if (meshRef.current) {
-      // Planet rotation
-      meshRef.current.rotation.y += rotationSpeed / TIME_SCALE;
+  // useFrame(({ clock }) => {
+  //   if (meshRef.current) {
+  //     // Planet rotation
+  //     meshRef.current.rotation.y += rotationSpeed / TIME_SCALE;
 
-      // Planet revolution
-      const t = clock.getElapsedTime() / TIME_SCALE;
-      const x = radius * Math.sin(t * revolutionSpeed);
-      const z = radius * Math.cos(t * revolutionSpeed);
-      meshRef.current.position.set(x, 0, z);
+  //     // Planet revolution
+  //     const t = clock.getElapsedTime() / TIME_SCALE;
+  //     const x = radius * Math.sin(t * revolutionSpeed);
+  //     const z = radius * Math.cos(t * revolutionSpeed);
+  //     meshRef.current.position.set(x, 0, z);
 
-      // If the planet is focused and camera locking is active, update the camera position
-      if (isFocused) {
-        const offset = new Vector3(10, 5, 10); // Offset the camera to give a better view
-        camera.position.copy(meshRef.current.position.clone().add(offset));
-        camera.lookAt(meshRef.current.position);
-      }
-    }
-  });
+  //     // If the planet is focused and camera locking is active, update the camera position
+  //     if (isFocused) {
+  //       const offset = new Vector3(10, 5, 10); // Offset the camera to give a better view
+  //       camera.position.copy(meshRef.current.position.clone().add(offset));
+  //       camera.lookAt(meshRef.current.position);
+  //     }
+  //   }
+  // });
 
   // Convert angle from degrees to radians
   const radians = (angle * Math.PI) / 180;
@@ -66,7 +65,7 @@ const Planet: React.FC<PlanetProps> = ({
         onClick={onPlanetClick} // Detect click and lock onto planet
         castShadow
       >
-        <sphereGeometry args={[2.5, 32, 32]} />
+        <sphereGeometry args={[2, 32, 32]} />
         <meshStandardMaterial
           map={planetTexture}
           roughness={100}

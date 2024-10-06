@@ -5,7 +5,6 @@ import { Vector3 } from "three";
 import Orbit from "./orbit";
 import Planet from "./planet";
 
-// Define the types for planet data
 interface PlanetData {
   key: string;
   position: Vector3;
@@ -13,29 +12,32 @@ interface PlanetData {
   userData: { type: string; key: string };
   eccentricity: number;
   texture: string;
-  angle: number;
+  angle: number; // Axial tilt in degrees
   rotationSpeed: number;
   revolutionSpeed: number;
-  orbitalSpeed: number;
   radius: number;
+  tilt: number;
+  semiMajorAxis: number;
 }
 
 interface PlanetsProps {
   positions: any;
 }
-const Planets: React.FC<PlanetsProps> = ({ positions }) => {
-  const [focusedPlanet, setFocusedPlanet] = useState<PlanetData | null>(null); // Track the focused planet
-  const [isCameraLockActive, setIsCameraLockActive] = useState(true); // Track if camera locking is active
 
-  // Handle scroll detection
+const Planets: React.FC<PlanetsProps> = ({ positions }) => {
+  const [focusedPlanet, setFocusedPlanet] = useState<PlanetData | null>(null);
+  const [isCameraLockActive, setIsCameraLockActive] = useState(true);
+
+  // Position of the sun or focal point
+  const sunPosition = new Vector3(0, 0, 0); // Set this to the position of your sun
+
   useEffect(() => {
     const deactivateCameraLock = () => {
-      setIsCameraLockActive(false); // Disable camera lock on scroll
+      setIsCameraLockActive(false);
     };
 
     window.addEventListener("mousemove", deactivateCameraLock);
 
-    // Cleanup on component unmount
     return () => {
       window.removeEventListener("mousemove", deactivateCameraLock);
     };
@@ -43,20 +45,42 @@ const Planets: React.FC<PlanetsProps> = ({ positions }) => {
 
   const planetData: PlanetData[] = useMemo(() => {
     return PLANETS.map((planet) => {
-      // const currentPosition = planet.position; // Get the current position from the positions prop
-      const currentPosition = positions[planet.key]; // Get the current position from the positions prop
+      const currentPosition = positions[planet.key];
       const position = new Vector3(
         ...[
           currentPosition[0] * POSITION_SCALING_FACTOR,
           currentPosition[1] * POSITION_SCALING_FACTOR,
           currentPosition[2] * POSITION_SCALING_FACTOR,
         ]
-      ); // Create a Vector3 with the position
-      const radius = position.length(); // Calculate the radius from the Sun
+      );
+
+      // Convert angle from degrees to radians for rotation
+      const tiltInRadians = (planet.angle * Math.PI) / 180;
+      const inclinationInRadians = (planet.orbitTilt * Math.PI) / 180; // Convert inclination to radians
+
+      // Apply the axial tilt and inclination to the position
+      const tiltedPosition = new Vector3(
+        position.x,
+        position.y * Math.cos(tiltInRadians) -
+          position.z * Math.sin(tiltInRadians), // Y-axis rotation
+        position.y * Math.sin(tiltInRadians) +
+          position.z * Math.cos(tiltInRadians) // Z-axis rotation
+      );
+
+      // Apply inclination to the Y-axis
+      const inclinedPosition = new Vector3(
+        tiltedPosition.x,
+        tiltedPosition.y * Math.cos(inclinationInRadians) -
+          tiltedPosition.z * Math.sin(inclinationInRadians),
+        tiltedPosition.y * Math.sin(inclinationInRadians) +
+          tiltedPosition.z * Math.cos(inclinationInRadians)
+      );
+
+      const radius = inclinedPosition.length();
 
       return {
         key: planet.key,
-        position: position,
+        position: inclinedPosition,
         scale: planet.scale,
         eccentricity: planet.eccentricity,
         userData: { type: "Planet", key: planet.key },
@@ -64,15 +88,16 @@ const Planets: React.FC<PlanetsProps> = ({ positions }) => {
         angle: planet.angle,
         rotationSpeed: planet.rotationSpeed,
         revolutionSpeed: planet.revolutionSpeed,
-        orbitalSpeed: 0.01, // Set a default orbital speed
         radius: radius,
+        tilt: planet.orbitTilt,
+        semiMajorAxis: planet.semiMajorAxis,
       };
     });
-  }, []);
+  }, [positions]);
 
   const handlePlanetClick = (data: PlanetData) => {
-    setFocusedPlanet(data); // Set the clicked planet as focused
-    setIsCameraLockActive(true); // Re-enable camera lock when a planet is clicked
+    setFocusedPlanet(data);
+    setIsCameraLockActive(true);
   };
 
   return (
@@ -89,20 +114,20 @@ const Planets: React.FC<PlanetsProps> = ({ positions }) => {
             angle={data.angle}
             radius={data.radius}
             revolutionSpeed={data.revolutionSpeed}
-            onPlanetClick={() => handlePlanetClick(data)} // Handle planet click
-            isFocused={focusedPlanet?.key === data.key && isCameraLockActive} // Check if this is the focused planet and camera locking is active
+            onPlanetClick={() => handlePlanetClick(data)}
+            isFocused={focusedPlanet?.key === data.key && isCameraLockActive}
           />
         ))}
       </InstancedRigidBodies>
 
-      {/* Render orbits for each planet */}
       {planetData.map((data) => (
         <Orbit
           key={`${data.key}-orbit`}
-          radius={data.radius}
+          radius={data.semiMajorAxis * POSITION_SCALING_FACTOR} // Semi-major axis adjusted for scaling
           segments={100}
-          position={[0, 0, 0]}
+          focusPosition={sunPosition} // Center orbit around the sun position
           eccentricity={data.eccentricity}
+          tilt={data.tilt} // Pass the angle for tilt
         />
       ))}
     </>
