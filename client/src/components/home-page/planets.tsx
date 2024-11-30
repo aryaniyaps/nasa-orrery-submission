@@ -1,13 +1,10 @@
-import { useFrame } from "@react-three/fiber";
-import { InstancedRigidBodies, RapierRigidBody } from "@react-three/rapier";
-import React, { useEffect, useMemo, useRef } from "react";
+import { PLANETS, POSITION_SCALING_FACTOR } from "@/lib/constants";
+import { InstancedRigidBodies } from "@react-three/rapier";
+import React, { useEffect, useMemo, useState } from "react";
 import { Vector3 } from "three";
-
-import { PLANETS } from "@/lib/constants";
-import Orbit from "./orbit"; // Import the new Orbit component
+import Orbit from "./orbit";
 import Planet from "./planet";
 
-// Define the types for planet data
 interface PlanetData {
   key: string;
   position: Vector3;
@@ -15,99 +12,122 @@ interface PlanetData {
   userData: { type: string; key: string };
   eccentricity: number;
   texture: string;
-  angle: number; // Add angle to track the current angle in the orbit
+  angle: number; // Axial tilt in degrees
   rotationSpeed: number;
+  revolutionSpeed: number;
+  radius: number;
+  tilt: number;
+  semiMajorAxis: number;
 }
 
-// Define the props for Planets component
-const Planets: React.FC = () => {
-  const planetsRef = useRef<RapierRigidBody[]>([]);
+interface PlanetsProps {
+  positions: any;
+}
+
+const Planets: React.FC<PlanetsProps> = ({ positions }) => {
+  const [focusedPlanet, setFocusedPlanet] = useState<PlanetData | null>(null);
+  const [isCameraLockActive, setIsCameraLockActive] = useState(true);
+
+  // Position of the sun or focal point
+  const sunPosition = new Vector3(0, 0, 0); // Set this to the position of your sun
+
+  useEffect(() => {
+    const deactivateCameraLock = () => {
+      setIsCameraLockActive(false);
+    };
+
+    window.addEventListener("mousemove", deactivateCameraLock);
+
+    return () => {
+      window.removeEventListener("mousemove", deactivateCameraLock);
+    };
+  }, []);
 
   const planetData: PlanetData[] = useMemo(() => {
     return PLANETS.map((planet) => {
-      const position = new Vector3(...planet.position);
+      const currentPosition = positions[planet.key];
+      const position = new Vector3(
+        ...[
+          currentPosition[0] * POSITION_SCALING_FACTOR,
+          currentPosition[1] * POSITION_SCALING_FACTOR,
+          currentPosition[2] * POSITION_SCALING_FACTOR,
+        ]
+      );
+
+      // Convert angle from degrees to radians for rotation
+      const tiltInRadians = (planet.angle * Math.PI) / 180;
+      const inclinationInRadians = (planet.orbitTilt * Math.PI) / 180; // Convert inclination to radians
+
+      // Apply the axial tilt and inclination to the position
+      const tiltedPosition = new Vector3(
+        position.x,
+        position.y * Math.cos(tiltInRadians) -
+          position.z * Math.sin(tiltInRadians), // Y-axis rotation
+        position.y * Math.sin(tiltInRadians) +
+          position.z * Math.cos(tiltInRadians) // Z-axis rotation
+      );
+
+      // Apply inclination to the Y-axis
+      const inclinedPosition = new Vector3(
+        tiltedPosition.x,
+        tiltedPosition.y * Math.cos(inclinationInRadians) -
+          tiltedPosition.z * Math.sin(inclinationInRadians),
+        tiltedPosition.y * Math.sin(inclinationInRadians) +
+          tiltedPosition.z * Math.cos(inclinationInRadians)
+      );
+
+      const radius = inclinedPosition.length();
 
       return {
         key: planet.key,
-        position: position,
+        position: inclinedPosition,
         scale: planet.scale,
         eccentricity: planet.eccentricity,
         userData: { type: "Planet", key: planet.key },
         texture: planet.texture,
-        angle: planet.angle, // Initialize the angle
+        angle: planet.angle,
         rotationSpeed: planet.rotationSpeed,
+        revolutionSpeed: planet.revolutionSpeed,
+        radius: radius,
+        tilt: planet.orbitTilt,
+        semiMajorAxis: planet.semiMajorAxis,
       };
     });
-  }, []);
+  }, [positions]);
 
-  useEffect(() => {
-    if (planetsRef.current) {
-      planetsRef.current.forEach((planet) => {
-        planet?.setAngvel(new Vector3(0, Math.random() - 0.5, 0), true);
-      });
-    }
-  }, [planetsRef.current]);
-
-  // Constant angular speed for all planets (adjust as needed)
-  const constantAngularSpeed = 0.01; // Radians per frame
-
-  // Update planets' positions every frame
-  useFrame(() => {
-    if (planetsRef.current) {
-      planetsRef.current.forEach((planet, index) => {
-        const data = planetData[index];
-        const planetPos = planet.translation(); // Get the current physics position
-
-        console.log(`Planet: ${data.key}, Physics Position:`, planetPos);
-
-        // Update the angle using the constant angular speed
-        data.angle += constantAngularSpeed; // Increment angle by constant speed
-
-        // Calculate new position
-        const newPosition = new Vector3(
-          data.position.length() * Math.cos(data.angle),
-          data.position.y,
-          data.position.length() * Math.sin(data.angle)
-        );
-
-        // Update the planet's position using RigidBodyApi
-        planet.setTranslation(newPosition, true);
-      });
-    }
-  });
+  const handlePlanetClick = (data: PlanetData) => {
+    setFocusedPlanet(data);
+    setIsCameraLockActive(true);
+  };
 
   return (
     <>
-      <InstancedRigidBodies
-        ref={planetsRef}
-        instances={planetData.map((data) => ({
-          position: data.position,
-          scale: data.scale,
-          userData: data.userData,
-          key: data.key,
-        }))}
-        colliders="ball"
-      >
+      <InstancedRigidBodies instances={planetData} colliders="ball">
         {planetData.map((data) => (
           <Planet
             key={data.key}
+            planetName={data.key}
             position={data.position}
             scale={data.scale}
-            texture={data.texture} // Pass the texture
+            texture={data.texture}
             rotationSpeed={data.rotationSpeed}
             angle={data.angle}
+            radius={data.radius}
+            revolutionSpeed={data.revolutionSpeed}
+            onPlanetClick={() => handlePlanetClick(data)}
+            isFocused={focusedPlanet?.key === data.key && isCameraLockActive}
           />
         ))}
       </InstancedRigidBodies>
 
-      {/* Render orbits for each planet */}
       {planetData.map((data) => (
         <Orbit
           key={`${data.key}-orbit`}
-          radius={data.position.length()} // Ensure radius matches the distance from the Sun
-          segments={100} // Number of segments for the circle
-          position={[0, 0, 0]} // Set the position to be at the Sun's position
-          eccentricity={data.eccentricity} // Set the eccentricity for the orbit
+          radius={data.semiMajorAxis * POSITION_SCALING_FACTOR} // Semi-major axis adjusted for scaling
+          segments={100}
+          focusPosition={sunPosition} // Center orbit around the sun position
+          eccentricity={data.eccentricity}
+          tilt={data.tilt} // Pass the angle for tilt
         />
       ))}
     </>
